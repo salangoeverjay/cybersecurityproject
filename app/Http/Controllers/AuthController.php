@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\PasswordSecurity;
+use InvalidArgumentException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -11,7 +13,7 @@ class AuthController extends Controller
 {
     public function showRegister(): View
     {
-        return view('auth.register', ['title' => 'User Registration']);
+        return view('auth.register', ['title' => 'Operator Provisioning']);
     }
 
     public function register(Request $request): RedirectResponse
@@ -21,14 +23,12 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
         ]);
 
-        $pepper = config('security.password_pepper');
-        if (empty($pepper)) {
+        try {
+            $salt = PasswordSecurity::generateSalt();
+            $passwordHash = PasswordSecurity::hash($validated['password'], $salt);
+        } catch (InvalidArgumentException $exception) {
             return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
         }
-
-        // Security: generate a cryptographically secure random salt for each user.
-        $salt = bin2hex(random_bytes(16));
-        $passwordHash = $this->hashPasswordWithSaltAndPepper($validated['password'], $salt, $pepper);
 
         User::create([
             'username' => $validated['username'],
@@ -36,12 +36,12 @@ class AuthController extends Controller
             'salt' => $salt,
         ]);
 
-        return redirect()->route('login.form')->with('success', 'Registration Successful. Please login.');
+        return redirect()->route('login.form')->with('success', 'Access profile created. Authenticate to continue.');
     }
 
     public function showLogin(): View
     {
-        return view('auth.login', ['title' => 'User Login']);
+        return view('auth.login', ['title' => 'Secure Login Gateway']);
     }
 
     public function login(Request $request): RedirectResponse
@@ -51,20 +51,18 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'max:100'],
         ]);
 
-        $pepper = config('security.password_pepper');
-        if (empty($pepper)) {
-            return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
-        }
-
         $user = User::where('username', $validated['username'])->first();
         if (!$user) {
             return back()->withInput()->with('error', 'Invalid Username or Password');
         }
 
-        $computedHash = $this->hashPasswordWithSaltAndPepper($validated['password'], $user->salt, $pepper);
+        try {
+            $validPassword = PasswordSecurity::verify($validated['password'], $user->salt, $user->password_hash);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
+        }
 
-        // Security: use hash_equals to reduce timing attack risk.
-        if (!hash_equals($user->password_hash, $computedHash)) {
+        if (!$validPassword) {
             return back()->withInput()->with('error', 'Invalid Username or Password');
         }
 
@@ -73,7 +71,7 @@ class AuthController extends Controller
         $request->session()->put('auth_user_id', $user->id);
         $request->session()->put('auth_username', $user->username);
 
-        return redirect()->route('dashboard')->with('success', 'Login Successful');
+        return redirect()->route('dashboard')->with('success', 'Secure session initialized.');
     }
 
     public function dashboard(Request $request): View|RedirectResponse
@@ -83,7 +81,7 @@ class AuthController extends Controller
         }
 
         return view('dashboard', [
-            'title' => 'Dashboard',
+            'title' => 'Mission Dashboard',
             'username' => $request->session()->get('auth_username'),
         ]);
     }
@@ -94,14 +92,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login.form')->with('success', 'You have been logged out.');
-    }
-
-    /**
-     * Hashes password + salt + pepper using SHA-256.
-     */
-    private function hashPasswordWithSaltAndPepper(string $password, string $salt, string $pepper): string
-    {
-        return hash('sha256', $password.$salt.$pepper);
+        return redirect()->route('login.form')->with('success', 'Session terminated successfully.');
     }
 }

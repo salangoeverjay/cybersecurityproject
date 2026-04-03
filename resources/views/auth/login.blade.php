@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <p class="subtitle">Sign in to verify your hashed credentials securely.</p>
+    <p class="subtitle">Authenticate to the secure node and validate encrypted credentials.</p>
 
     <form method="POST" action="{{ route('login.submit') }}">
         @csrf
@@ -49,10 +49,13 @@
             </div>
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit">Initialize Session</button>
     </form>
 
     <p class="helper">
-        No account yet? <a href="{{ route('register.form') }}">Register here</a>
+        No access profile yet? <a href="{{ route('register.form') }}">Create operator ID</a>
+    </p>
+    <p class="helper">
+        Lost your keyphrase? <a href="{{ route('password.forgot.form') }}">Run password reset</a>
     </p>
 @endsection

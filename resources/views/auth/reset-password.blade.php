@@ -1,24 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
-    <p class="subtitle">Provision a new operator account with hardened password hashing defenses.</p>
+    <p class="subtitle">Set your new password securely.</p>
 
-    <form method="POST" action="{{ route('register.submit') }}">
+    <form method="POST" action="{{ route('password.reset.submit') }}">
         @csrf
+        <input type="hidden" name="token" value="{{ $token }}">
+
         <div class="field">
             <label for="username">Username</label>
             <input
                 type="text"
                 id="username"
                 name="username"
-                value="{{ old('username') }}"
-                placeholder="e.g. cyber_student01"
+                value="{{ old('username', $username) }}"
+                placeholder="Enter your username"
                 required
             >
         </div>
 
         <div class="field">
-            <label for="password">Password</label>
+            <label for="password">New Password</label>
             <div class="password-wrap">
                 <input
                     type="password"
@@ -32,8 +34,8 @@
                     class="password-toggle"
                     data-toggle-password="password"
                     data-visible="false"
-                    aria-label="Show password"
-                    title="Show password"
+                    aria-label="Show new password"
+                    title="Show new password"
                 >
                     <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path>
@@ -50,13 +52,13 @@
         </div>
 
         <div class="field">
-            <label for="password_confirmation">Confirm Password</label>
+            <label for="password_confirmation">Confirm New Password</label>
             <div class="password-wrap">
                 <input
                     type="password"
                     id="password_confirmation"
                     name="password_confirmation"
-                    placeholder="Retype your password"
+                    placeholder="Retype new password"
                     required
                 >
                 <button
@@ -81,10 +83,10 @@
             </div>
         </div>
 
-        <button type="submit">Create Access Profile</button>
+        <button type="submit">Reset Password</button>
     </form>
 
     <p class="helper">
-        Existing operator? <a href="{{ route('login.form') }}">Enter login gateway</a>
+        Back to login? <a href="{{ route('login.form') }}">Login here</a>
     </p>
 @endsection

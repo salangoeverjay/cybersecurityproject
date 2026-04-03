@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureSessionAuthenticated
+{
+    /**
+     * Ensure the user is logged in via session before accessing protected routes.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (!$request->session()->has('auth_user_id')) {
+            return redirect()->route('login.form')->with('error', 'Please login first.');
+        }
+
+        return $next($request);
+    }
+}
