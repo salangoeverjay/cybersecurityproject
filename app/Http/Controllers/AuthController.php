@@ -76,13 +76,23 @@ class AuthController extends Controller
 
     public function dashboard(Request $request): View|RedirectResponse
     {
-        if (!$request->session()->has('auth_user_id')) {
+        $userId = $request->session()->get('auth_user_id');
+        if (!$userId) {
             return redirect()->route('login.form')->with('error', 'Please login first.');
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            $request->session()->forget(['auth_user_id', 'auth_username']);
+
+            return redirect()->route('login.form')->with('error', 'Please login again.');
         }
 
         return view('dashboard', [
             'title' => 'Mission Dashboard',
-            'username' => $request->session()->get('auth_username'),
+            'username' => $user->username,
+            'passwordHash' => $user->password_hash,
+            'salt' => $user->salt,
         ]);
     }
 

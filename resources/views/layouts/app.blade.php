@@ -111,6 +111,31 @@
             opacity: 1;
         }
 
+        .cursor-trail-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .cursor-trail-glyph {
+            position: fixed;
+            left: 0;
+            top: 0;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            user-select: none;
+            font-family: "Share Tech Mono", monospace;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: rgba(187, 255, 233, 0.98);
+            text-shadow: 0 0 10px rgba(55, 255, 176, 0.66);
+            animation: trailGlyph 680ms ease-out forwards;
+            will-change: transform, opacity, filter;
+        }
+
         .panel {
             width: min(520px, 100%);
             background: var(--panel);
@@ -370,6 +395,25 @@
             font-size: 14px;
             color: #b8f8df;
             font-family: "Share Tech Mono", monospace;
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 4px 8px;
+            line-height: 1.45;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .stat strong {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .stat-value {
+            flex: 1 1 220px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         @keyframes cardIn {
@@ -380,6 +424,25 @@
         @keyframes rise {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes trailGlyph {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.76);
+                filter: blur(0);
+            }
+            16% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translate(
+                    calc(-50% + var(--trail-drift-x, 0px)),
+                    calc(-50% + var(--trail-drift-y, -24px))
+                ) scale(1.18);
+                filter: blur(1.2px);
+            }
         }
 
         @media (max-width: 640px) {
@@ -396,6 +459,7 @@
 </head>
 <body>
     <canvas id="particle-canvas" class="particle-canvas" aria-hidden="true"></canvas>
+    <div id="cursor-trail-layer" class="cursor-trail-layer" aria-hidden="true"></div>
     <div class="panel">
         <div class="eyebrow">Cyber Ops Access Grid</div>
         <h1>{{ $title ?? 'Authentication' }}</h1>
@@ -651,6 +715,82 @@
                     animationFrameId = window.requestAnimationFrame(drawFrame);
                 }
             });
+        })();
+
+        (function () {
+            var layer = document.getElementById('cursor-trail-layer');
+            if (!layer) {
+                return;
+            }
+
+            var reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            var reducedMotion = reduceMotionQuery.matches;
+
+            var glyphPool = '0123456789abcdef';
+            var lastEmit = 0;
+            var emitInterval = reducedMotion ? 78 : 24;
+            var maxGlyphs = reducedMotion ? 36 : 120;
+
+            function randomInt(max) {
+                return Math.floor(Math.random() * max);
+            }
+
+            function randomGlyph() {
+                var glyphLength = Math.random() < 0.2 ? 2 : 1;
+                var value = '';
+
+                for (var i = 0; i < glyphLength; i += 1) {
+                    value += glyphPool[randomInt(glyphPool.length)];
+                }
+
+                return value;
+            }
+
+            function spawnGlyph(x, y) {
+                var glyph = document.createElement('span');
+                glyph.className = 'cursor-trail-glyph';
+                glyph.textContent = randomGlyph();
+
+                var jitterX = (Math.random() * 16) - 8;
+                var jitterY = (Math.random() * 12) - 6;
+                var driftX = (Math.random() * 42) - 21;
+                var driftY = -(16 + Math.random() * 30);
+                var duration = 460 + Math.random() * 360;
+
+                glyph.style.left = (x + jitterX) + 'px';
+                glyph.style.top = (y + jitterY) + 'px';
+                glyph.style.setProperty('--trail-drift-x', driftX + 'px');
+                glyph.style.setProperty('--trail-drift-y', driftY + 'px');
+                glyph.style.animationDuration = duration + 'ms';
+
+                layer.appendChild(glyph);
+                while (layer.childElementCount > maxGlyphs) {
+                    if (!layer.firstElementChild) {
+                        break;
+                    }
+                    layer.firstElementChild.remove();
+                }
+                glyph.addEventListener('animationend', function () {
+                    glyph.remove();
+                }, { once: true });
+            }
+
+            function handleMove(event) {
+                if (event.pointerType && event.pointerType === 'touch') {
+                    return;
+                }
+
+                var now = performance.now();
+                if (now - lastEmit < emitInterval) {
+                    return;
+                }
+
+                lastEmit = now;
+                spawnGlyph(event.clientX, event.clientY);
+            }
+
+            window.addEventListener('pointermove', handleMove, { passive: true });
+            window.addEventListener('mousemove', handleMove, { passive: true });
         })();
     </script>
 </body>

@@ -4,9 +4,26 @@
     <p class="subtitle">Secure tunnel online. Authentication handshake completed.</p>
 
     <div class="dash-grid">
-        <div class="stat"><strong>Node Status:</strong> Access Granted</div>
-        <div class="stat"><strong>Operator ID:</strong> {{ $username }}</div>
-        <div class="stat"><strong>Crypto Layer:</strong> Salted + peppered SHA-256 verification passed</div>
+        <div class="stat">
+            <strong>Node Status:</strong>
+            <span class="stat-value">Access Granted</span>
+        </div>
+        <div class="stat">
+            <strong>Operator ID:</strong>
+            <span class="stat-value">{{ $username }}</span>
+        </div>
+        <div class="stat">
+            <strong>Crypto Layer:</strong>
+            <span class="stat-value">Salted + peppered SHA-256 verification passed</span>
+        </div>
+        <div class="stat">
+            <strong>Password Hash:</strong>
+            <span class="stat-value">{{ $passwordHash }}</span>
+        </div>
+        <div class="stat">
+            <strong>Salt:</strong>
+            <span class="stat-value">{{ $salt }}</span>
+        </div>
     </div>
 
     <p class="helper">
