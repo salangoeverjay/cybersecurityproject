@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <p class="subtitle">Generate a secure reset link (local demo flow).</p>
+    <p class="subtitle">Generate a secure password reset link.</p>
 
     <form method="POST" action="{{ route('password.forgot.submit') }}">
         @csrf

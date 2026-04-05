@@ -12,10 +12,8 @@
             <input
                 type="text"
                 id="username"
-                name="username"
-                value="{{ old('username', $username) }}"
-                placeholder="Enter your username"
-                required
+                value="{{ $username !== '' ? $username : 'Linked account from reset token' }}"
+                readonly
             >
         </div>
 
@@ -27,6 +25,7 @@
                     id="password"
                     name="password"
                     placeholder="Minimum 8 characters"
+                    autocomplete="new-password"
                     required
                 >
                 <button
@@ -49,6 +48,7 @@
                     </svg>
                 </button>
             </div>
+            @include('components.password-strength-meter', ['inputId' => 'password'])
         </div>
 
         <div class="field">
@@ -59,6 +59,7 @@
                     id="password_confirmation"
                     name="password_confirmation"
                     placeholder="Retype new password"
+                    autocomplete="new-password"
                     required
                 >
                 <button

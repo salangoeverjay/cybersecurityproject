@@ -1,58 +1,69 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Cybersecurity Authentication Project
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based authentication system implementing custom credential security with:
+- Registration and login
+- Session-protected dashboard
+- Forgot-password reset flow (token expiry)
+- Password change in settings
+- SHA-256 hashing with per-user salt and application pepper
 
-## About Laravel
+## Security Model (Current)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Password hash: `SHA-256(password + salt + pepper)`
+- Salt: generated per password set using `bin2hex(random_bytes(16))`
+- Pepper: stored in environment variable `PASSWORD_PEPPER` (not in DB)
+- Reset tokens: stored as SHA-256 hash with pepper
+- Reset token expiry: configurable via `PASSWORD_RESET_TTL_MINUTES` (default: 15)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Environment Variables
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Required/important values:
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```env
+APP_ENV=local
+APP_URL=http://127.0.0.1:8000
+PASSWORD_PEPPER=your-long-random-secret
+PASSWORD_RESET_TTL_MINUTES=15
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Local Setup
 
-## Contributing
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Open: `http://127.0.0.1:8000/login`
 
-## Code of Conduct
+## Test Commands
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Run all tests:
 
-## Security Vulnerabilities
+```bash
+php artisan test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Core Routes
 
-## License
+- `GET /register` / `POST /register`
+- `GET /login` / `POST /login`
+- `GET /forgot-password` / `POST /forgot-password`
+- `GET /reset-password/{token}` / `POST /reset-password`
+- `GET /settings` (session-protected)
+- `POST /settings/username` / `POST /settings/password`
+- `GET /dashboard` (session-protected)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Submission Documents
+
+- Short security documentation:
+  - `docs/short-password-security-documentation.md`
+- Extended midterm documentation:
+  - `docs/midterm-auth-documentation.md`
+
+## Notes
+
+- This project intentionally demonstrates explicit salt + pepper logic for coursework.
+- For production-grade systems, adaptive password hashing (Argon2id/bcrypt) is recommended.

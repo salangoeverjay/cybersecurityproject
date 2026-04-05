@@ -98,6 +98,7 @@
                     id="new_password"
                     name="new_password"
                     placeholder="Minimum 8 characters"
+                    autocomplete="new-password"
                     required
                 >
                 <button
@@ -120,6 +121,7 @@
                     </svg>
                 </button>
             </div>
+            @include('components.password-strength-meter', ['inputId' => 'new_password'])
         </div>
 
         <div class="field">
@@ -130,6 +132,7 @@
                     id="new_password_confirmation"
                     name="new_password_confirmation"
                     placeholder="Retype new password"
+                    autocomplete="new-password"
                     required
                 >
                 <button

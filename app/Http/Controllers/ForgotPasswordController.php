@@ -25,6 +25,9 @@ class ForgotPasswordController extends Controller
         ]);
 
         $user = User::where('username', $validated['username'])->first();
+        if (!$user) {
+            return back()->withInput()->with('error', 'Username does not exist.');
+        }
 
         try {
             $rawToken = bin2hex(random_bytes(32));
@@ -32,58 +35,57 @@ class ForgotPasswordController extends Controller
             return back()->withInput()->with('error', 'Unable to generate reset token. Please try again.');
         }
 
-        if ($user) {
-            try {
-                $tokenHash = PasswordSecurity::hashResetToken($rawToken);
-            } catch (InvalidArgumentException $exception) {
-                return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
-            }
-
-            PasswordResetToken::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'token_hash' => $tokenHash,
-                    'expires_at' => Carbon::now()->addMinutes(15),
-                ]
-            );
+        try {
+            $tokenHash = PasswordSecurity::hashResetToken($rawToken);
+        } catch (InvalidArgumentException $exception) {
+            return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
         }
 
-        // Demo-friendly flow: always show a link after submit.
-        // Only valid usernames can complete reset because token hash is stored only when user exists.
+        PasswordResetToken::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'token_hash' => $tokenHash,
+                'expires_at' => Carbon::now()->addMinutes((int) config('security.password_reset_ttl_minutes', 15)),
+            ]
+        );
+
         // Use relative URL to avoid incorrect host issues behind proxies (e.g. Railway).
-        $resetLink = route('password.reset.form', ['token' => $rawToken, 'username' => $validated['username']], false);
+        $resetLink = route('password.reset.form', ['token' => $rawToken], false);
 
         return back()
-            ->with('success', 'If that username exists, a password reset link has been generated.')
+            ->with('success', 'Password reset link generated successfully.')
             ->with('reset_link', $resetLink);
     }
 
-    public function showResetForm(Request $request, string $token): View
+    public function showResetForm(string $token): View
     {
+        $resolvedUsername = '';
+
+        try {
+            $incomingTokenHash = PasswordSecurity::hashResetToken($token);
+            $resetRecord = PasswordResetToken::where('token_hash', $incomingTokenHash)->first();
+
+            if ($resetRecord && Carbon::now()->lessThanOrEqualTo($resetRecord->expires_at)) {
+                $user = User::find($resetRecord->user_id);
+                $resolvedUsername = (string) ($user?->username ?? '');
+            }
+        } catch (\Throwable $exception) {
+            $resolvedUsername = '';
+        }
+
         return view('auth.reset-password', [
             'title' => 'Reset Password',
             'token' => $token,
-            'username' => (string) $request->query('username', ''),
+            'username' => $resolvedUsername,
         ]);
     }
 
     public function resetPassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:50'],
             'token' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
         ]);
-
-        $user = User::where('username', $validated['username'])->first();
-        if (!$user) {
-            return back()->withInput()->with('error', 'Invalid or expired reset link.');
-        }
-
-        $resetRecord = PasswordResetToken::where('user_id', $user->id)->first();
-        if (!$resetRecord || Carbon::now()->greaterThan($resetRecord->expires_at)) {
-            return back()->withInput()->with('error', 'Invalid or expired reset link.');
-        }
 
         try {
             $incomingTokenHash = PasswordSecurity::hashResetToken($validated['token']);
@@ -91,7 +93,13 @@ class ForgotPasswordController extends Controller
             return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
         }
 
-        if (!hash_equals($resetRecord->token_hash, $incomingTokenHash)) {
+        $resetRecord = PasswordResetToken::where('token_hash', $incomingTokenHash)->first();
+        if (!$resetRecord || Carbon::now()->greaterThan($resetRecord->expires_at)) {
+            return back()->withInput()->with('error', 'Invalid or expired reset link.');
+        }
+
+        $user = User::find($resetRecord->user_id);
+        if (!$user) {
             return back()->withInput()->with('error', 'Invalid or expired reset link.');
         }
 

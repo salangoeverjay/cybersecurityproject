@@ -304,6 +304,92 @@
             display: inline;
         }
 
+        .password-strength {
+            margin-top: 10px;
+        }
+
+        .password-strength-track {
+            width: 100%;
+            height: 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(55, 255, 176, 0.26);
+            background: rgba(2, 18, 15, 0.92);
+            overflow: hidden;
+        }
+
+        .password-strength-fill {
+            display: block;
+            width: 0%;
+            height: 100%;
+            border-radius: inherit;
+            transition: width .18s ease, background .18s ease;
+            background: linear-gradient(90deg, #4d5855, #73827d);
+        }
+
+        .password-strength-text {
+            margin: 8px 2px 0;
+            font-size: 12px;
+            font-family: "Share Tech Mono", monospace;
+            color: #91aa9f;
+            letter-spacing: 0.02em;
+        }
+
+        .password-strength-rules {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-top: 9px;
+        }
+
+        .password-rule {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #78a896;
+            font-family: "Share Tech Mono", monospace;
+        }
+
+        .password-rule::before {
+            content: "o";
+            color: #608777;
+            line-height: 1;
+        }
+
+        .password-rule.met {
+            color: #adffd8;
+        }
+
+        .password-rule.met::before {
+            content: "*";
+            color: #37ffb0;
+            text-shadow: 0 0 8px rgba(55, 255, 176, 0.5);
+        }
+
+        .password-strength[data-tone="weak"] .password-strength-fill {
+            background: linear-gradient(90deg, #ff6f86, #ff9a6b);
+        }
+
+        .password-strength[data-tone="medium"] .password-strength-fill {
+            background: linear-gradient(90deg, #ffb83f, #ffe55a);
+        }
+
+        .password-strength[data-tone="strong"] .password-strength-fill {
+            background: linear-gradient(90deg, #12e9a3, #2ff5ff);
+        }
+
+        .password-strength[data-tone="weak"] .password-strength-text {
+            color: #ff9ab3;
+        }
+
+        .password-strength[data-tone="medium"] .password-strength-text {
+            color: #ffe482;
+        }
+
+        .password-strength[data-tone="strong"] .password-strength-text {
+            color: #a6ffd8;
+        }
+
         button {
             width: 100%;
             border: 0;
@@ -502,6 +588,119 @@
                 button.setAttribute('data-visible', showing ? 'false' : 'true');
             });
         });
+
+        (function () {
+            function evaluatePassword(password) {
+                var hasLength = password.length >= 8;
+                var hasLower = /[a-z]/.test(password);
+                var hasUpper = /[A-Z]/.test(password);
+                var hasNumber = /\d/.test(password);
+                var hasSymbol = /[^A-Za-z0-9]/.test(password);
+                var hasMixed = hasLower && hasUpper;
+                var bonusLength = password.length >= 12 ? 1 : 0;
+                var score = 0;
+
+                if (hasLength) {
+                    score += 1;
+                }
+                if (hasLower) {
+                    score += 1;
+                }
+                if (hasUpper) {
+                    score += 1;
+                }
+                if (hasNumber) {
+                    score += 1;
+                }
+                if (hasSymbol) {
+                    score += 1;
+                }
+                score += bonusLength;
+
+                var percent = Math.round((score / 6) * 100);
+                var tone = 'weak';
+                var label = 'Weak';
+
+                if (password.length === 0) {
+                    return {
+                        percent: 0,
+                        tone: 'none',
+                        label: 'Not entered',
+                        rules: {
+                            length: hasLength,
+                            mixed: hasMixed,
+                            number: hasNumber,
+                            symbol: hasSymbol,
+                        },
+                    };
+                }
+
+                if (!hasLength || score <= 2) {
+                    tone = 'weak';
+                    label = 'Weak';
+                } else if (score <= 4) {
+                    tone = 'medium';
+                    label = 'Medium';
+                } else {
+                    tone = 'strong';
+                    label = 'Strong';
+                }
+
+                return {
+                    percent: percent,
+                    tone: tone,
+                    label: label,
+                    rules: {
+                        length: hasLength,
+                        mixed: hasMixed,
+                        number: hasNumber,
+                        symbol: hasSymbol,
+                    },
+                };
+            }
+
+            function attachPasswordStrengthMeter(meter) {
+                var inputId = meter.getAttribute('data-password-input-id');
+                var input = inputId ? document.getElementById(inputId) : null;
+                var fill = meter.querySelector('.password-strength-fill');
+                var track = meter.querySelector('.password-strength-track');
+                var text = meter.querySelector('.password-strength-text');
+                var ruleLength = meter.querySelector('[data-rule="length"]');
+                var ruleMixed = meter.querySelector('[data-rule="mixed"]');
+                var ruleNumber = meter.querySelector('[data-rule="number"]');
+                var ruleSymbol = meter.querySelector('[data-rule="symbol"]');
+
+                if (!input || !fill || !track || !text) {
+                    return;
+                }
+
+                function updateRuleState(element, met) {
+                    if (!element) {
+                        return;
+                    }
+
+                    element.classList.toggle('met', met);
+                }
+
+                function renderStrength() {
+                    var result = evaluatePassword(input.value);
+                    meter.setAttribute('data-tone', result.tone);
+                    fill.style.width = result.percent + '%';
+                    track.setAttribute('aria-valuenow', String(result.percent));
+                    text.textContent = 'Strength: ' + result.label;
+
+                    updateRuleState(ruleLength, result.rules.length);
+                    updateRuleState(ruleMixed, result.rules.mixed);
+                    updateRuleState(ruleNumber, result.rules.number);
+                    updateRuleState(ruleSymbol, result.rules.symbol);
+                }
+
+                input.addEventListener('input', renderStrength);
+                renderStrength();
+            }
+
+            document.querySelectorAll('[data-password-strength]').forEach(attachPasswordStrengthMeter);
+        })();
 
         (function () {
             var canvas = document.getElementById('particle-canvas');
