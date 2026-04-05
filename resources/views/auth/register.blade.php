@@ -49,7 +49,7 @@
                     </svg>
                 </button>
             </div>
-            @include('components.password-strength-meter', ['inputId' => 'password'])
+            @include('components.password-strength-bar', ['inputId' => 'password'])
         </div>
 
         <div class="field">
