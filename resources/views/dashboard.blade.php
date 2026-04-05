@@ -24,6 +24,13 @@
             <strong>Salt:</strong>
             <span class="stat-value">{{ $salt }}</span>
         </div>
+        <div class="stat">
+            <strong>Downloads:</strong>
+            <span class="stat-value">
+                <a href="https://docs.google.com/document/d/1P8e9xV9Z6oKPiVMz5eV3ZE71mYb21H6JL_o1pbzBxHg/export?format=pdf" target="_blank" rel="noopener noreferrer">Download Documentation (PDF)</a><br>
+                <a href="https://github.com/salangoeverjay/cybersecurityproject/archive/refs/heads/main.zip" target="_blank" rel="noopener noreferrer">Download Source Code (ZIP)</a>
+            </span>
+        </div>
     </div>
 
     <p class="helper">
