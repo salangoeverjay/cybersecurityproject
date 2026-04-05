@@ -26,10 +26,14 @@ class ForgotPasswordController extends Controller
 
         $user = User::where('username', $validated['username'])->first();
 
-        $resetLink = null;
+        try {
+            $rawToken = bin2hex(random_bytes(32));
+        } catch (\Throwable $exception) {
+            return back()->withInput()->with('error', 'Unable to generate reset token. Please try again.');
+        }
+
         if ($user) {
             try {
-                $rawToken = bin2hex(random_bytes(32));
                 $tokenHash = PasswordSecurity::hashResetToken($rawToken);
             } catch (InvalidArgumentException $exception) {
                 return back()->withInput()->with('error', 'Server configuration error: missing PASSWORD_PEPPER.');
@@ -42,12 +46,12 @@ class ForgotPasswordController extends Controller
                     'expires_at' => Carbon::now()->addMinutes(15),
                 ]
             );
-
-            // Demo-friendly local flow: show reset link directly instead of sending email.
-            if (app()->environment('local')) {
-                $resetLink = route('password.reset.form', ['token' => $rawToken, 'username' => $user->username]);
-            }
         }
+
+        // Demo-friendly flow: always show a link after submit.
+        // Only valid usernames can complete reset because token hash is stored only when user exists.
+        // Use relative URL to avoid incorrect host issues behind proxies (e.g. Railway).
+        $resetLink = route('password.reset.form', ['token' => $rawToken, 'username' => $validated['username']], false);
 
         return back()
             ->with('success', 'If that username exists, a password reset link has been generated.')
