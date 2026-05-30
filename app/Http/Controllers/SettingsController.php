@@ -74,7 +74,7 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string', 'max:100'],
-            'new_password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'new_password' => ['required', 'string', 'min:12', 'max:100', 'confirmed'],
         ]);
 
         try {

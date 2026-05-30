@@ -84,7 +84,7 @@ class ForgotPasswordController extends Controller
     {
         $validated = $request->validate([
             'token' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'password' => ['required', 'string', 'min:12', 'max:100', 'confirmed'],
         ]);
 
         try {

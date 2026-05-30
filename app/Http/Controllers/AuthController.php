@@ -20,7 +20,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'username' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:8', 'max:100', 'confirmed'],
+            'password' => ['required', 'string', 'min:12', 'max:100', 'confirmed'],
         ]);
 
         try {

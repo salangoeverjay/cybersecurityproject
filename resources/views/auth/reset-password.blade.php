@@ -24,7 +24,7 @@
                     type="password"
                     id="password"
                     name="password"
-                    placeholder="Minimum 8 characters"
+                    placeholder="Minimum 12 characters"
                     autocomplete="new-password"
                     required
                 >
